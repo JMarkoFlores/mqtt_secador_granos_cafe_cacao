@@ -1,0 +1,68 @@
+services:
+  emqx:
+    image: emqx/emqx:latest
+    container_name: emqx_broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "8083:8083"
+      - "8084:8084"
+      - "18083:18083"
+    environment:
+      - EMQX_ALLOW_ANONYMOUS=true
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=admin
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=public
+    networks:
+      - emqxnet
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mysql:
+    image: mysql:8.0
+    container_name: emqx_mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: emqx_db
+      MYSQL_USER: emqx_user
+      MYSQL_PASSWORD: emqx_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - emqxnet
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: emqx_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: emqx_user
+      PMA_PASSWORD: emqx_pass
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - emqxnet
+
+networks:
+  emqxnet:
+    name: emqxnet
+    driver: bridge
+
+volumes:
+  mysql_data:

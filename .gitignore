@@ -1,0 +1,65 @@
+# =====================================================================
+# .gitignore para Proyecto IoT - Simulación Multi-Sensor MQTT
+# =====================================================================
+
+# --- Variables de entorno y credenciales sensibles ---
+.env
+.env.*
+!.env.example
+simulacion_mqtt/.env
+
+# --- Bytecode y caché de Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# --- Entornos virtuales ---
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Caché de pruebas y cobertura ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# --- Configuración y secretos de Streamlit ---
+.streamlit/secrets.toml
+
+# --- Archivos temporales de logs y bases de datos ---
+*.log
+*.pid
+mysql_data/
+*.sqlite
+*.db
+
+# --- Archivos de configuración de IDEs y Editores ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# --- Archivos de sistema operativo ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# --- Archivos temporales de agentes/herramientas ---
+.gemini/

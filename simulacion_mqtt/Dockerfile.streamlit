@@ -1,0 +1,27 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar dependencias de Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar código de visualización
+COPY app_visualizacion.py .
+
+# Variables de entorno por defecto
+ENV PYTHONUNBUFFERED=1
+ENV MYSQL_HOST=mysql
+ENV MYSQL_PORT=3306
+ENV MYSQL_DB=emqx_db
+ENV MYSQL_USER=emqx_user
+ENV MYSQL_PASSWORD=emqx_pass
+ENV MQTT_BROKER_HOST=emqx
+ENV MQTT_BROKER_PORT=1883
+
+EXPOSE 8501
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')" || exit 1
+
+CMD ["streamlit", "run", "app_visualizacion.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]

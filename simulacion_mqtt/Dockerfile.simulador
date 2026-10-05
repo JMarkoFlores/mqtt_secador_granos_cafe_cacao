@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar dependencias de Python
+COPY requirements_services.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar código fuente
+COPY logica_control.py .
+COPY modelo_fisico.py .
+COPY simulador.py .
+
+# Variables de entorno por defecto
+ENV PYTHONUNBUFFERED=1
+ENV MQTT_BROKER_HOST=emqx
+ENV MQTT_BROKER_PORT=1883
+ENV N_SECADORES=5
+ENV INTERVALO_PUB_SEC=2.0
+ENV TEMP_IDEAL_DEFAULT=38.0
+ENV INYECTAR_FALLAS=false
+
+CMD ["python", "simulador.py"]

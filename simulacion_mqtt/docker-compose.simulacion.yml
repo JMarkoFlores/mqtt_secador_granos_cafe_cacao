@@ -1,0 +1,45 @@
+services:
+  suscriptor:
+    build:
+      context: .
+      dockerfile: Dockerfile.suscriptor
+    container_name: iot_suscriptor_mysql
+    restart: unless-stopped
+    environment:
+      - MQTT_BROKER_HOST=emqx_broker
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USER=${MQTT_USER:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - MYSQL_HOST=emqx_mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DB=emqx_db
+      - MYSQL_USER=emqx_user
+      - MYSQL_PASSWORD=emqx_pass
+      - MYSQL_POOL_SIZE=10
+    networks:
+      - emqxnet
+
+  simulador:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulador
+    container_name: iot_simulador_secadores
+    restart: unless-stopped
+    environment:
+      - MQTT_BROKER_HOST=emqx_broker
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USER=${MQTT_USER:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - N_SECADORES=${N_SECADORES:-5}
+      - INTERVALO_PUB_SEC=${INTERVALO_PUB_SEC:-2.0}
+      - TEMP_IDEAL_DEFAULT=${TEMP_IDEAL_DEFAULT:-38.0}
+      - INYECTAR_FALLAS=${INYECTAR_FALLAS:-false}
+    depends_on:
+      - suscriptor
+    networks:
+      - emqxnet
+
+networks:
+  emqxnet:
+    external: true
+    name: emqxnet

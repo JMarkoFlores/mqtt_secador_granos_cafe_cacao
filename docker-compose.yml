@@ -1,0 +1,153 @@
+# =====================================================================
+# Orquestación Unificada Docker Compose - Sistema de Simulación IoT
+# Secadores de Café/Cacao bajo MQTT y Persistencia MySQL
+# =====================================================================
+
+services:
+  # 1. Broker MQTT (EMQX 5.x)
+  emqx:
+    image: emqx/emqx:latest
+    container_name: emqx_broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "8083:8083"
+      - "8084:8084"
+      - "18083:18083"
+    environment:
+      - EMQX_ALLOW_ANONYMOUS=true
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=${EMQX_DASHBOARD_USER:-admin}
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=${EMQX_DASHBOARD_PASS:-public}
+    networks:
+      - emqxnet
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # 2. Base de Datos Relacional (MySQL 8.0)
+  mysql:
+    image: mysql:8.0
+    container_name: emqx_mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DB:-emqx_db}
+      MYSQL_USER: ${MYSQL_USER:-emqx_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-emqx_pass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./simulacion_mqtt/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    networks:
+      - emqxnet
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER -p$$MYSQL_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  # 3. Administrador Web de Base de Datos (phpMyAdmin)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: emqx_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: ${MYSQL_USER:-emqx_user}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-emqx_pass}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - emqxnet
+
+  # 4. Servicio Suscriptor y Persistencia hacia MySQL
+  suscriptor:
+    build:
+      context: ./simulacion_mqtt
+      dockerfile: Dockerfile.suscriptor
+    container_name: iot_suscriptor_mysql
+    restart: unless-stopped
+    environment:
+      - MQTT_BROKER_HOST=emqx
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USER=${MQTT_USER:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DB=${MYSQL_DB:-emqx_db}
+      - MYSQL_USER=${MYSQL_USER:-emqx_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-emqx_pass}
+      - MYSQL_POOL_SIZE=${MYSQL_POOL_SIZE:-10}
+    depends_on:
+      emqx:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    networks:
+      - emqxnet
+
+  # 5. Simulador de N Secadores Virtuales
+  simulador:
+    build:
+      context: ./simulacion_mqtt
+      dockerfile: Dockerfile.simulador
+    container_name: iot_simulador_secadores
+    restart: unless-stopped
+    environment:
+      - MQTT_BROKER_HOST=emqx
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USER=${MQTT_USER:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - N_SECADORES=${N_SECADORES:-5}
+      - INTERVALO_PUB_SEC=${INTERVALO_PUB_SEC:-2.0}
+      - TEMP_IDEAL_DEFAULT=${TEMP_IDEAL_DEFAULT:-38.0}
+      - INYECTAR_FALLAS=${INYECTAR_FALLAS:-false}
+    depends_on:
+      emqx:
+        condition: service_healthy
+      suscriptor:
+        condition: service_started
+    networks:
+      - emqxnet
+
+  # 6. Dashboard y Panel de Control en Tiempo Real (Streamlit)
+  dashboard:
+    build:
+      context: ./simulacion_mqtt
+      dockerfile: Dockerfile.streamlit
+    container_name: iot_dashboard_streamlit
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DB=${MYSQL_DB:-emqx_db}
+      - MYSQL_USER=${MYSQL_USER:-emqx_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-emqx_pass}
+      - MQTT_BROKER_HOST=emqx
+      - MQTT_BROKER_PORT=1883
+    depends_on:
+      mysql:
+        condition: service_healthy
+      emqx:
+        condition: service_healthy
+    networks:
+      - emqxnet
+
+networks:
+  emqxnet:
+    name: emqxnet
+    driver: bridge
+
+volumes:
+  mysql_data:

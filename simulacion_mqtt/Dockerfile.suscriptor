@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar dependencias de Python
+COPY requirements_services.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar código fuente
+COPY suscriptor.py .
+
+# Variables de entorno por defecto
+ENV PYTHONUNBUFFERED=1
+ENV MQTT_BROKER_HOST=emqx
+ENV MQTT_BROKER_PORT=1883
+ENV MYSQL_HOST=mysql
+ENV MYSQL_PORT=3306
+ENV MYSQL_DB=emqx_db
+ENV MYSQL_USER=emqx_user
+ENV MYSQL_PASSWORD=emqx_pass
+ENV MYSQL_POOL_SIZE=10
+
+CMD ["python", "suscriptor.py"]
