@@ -1,0 +1,147 @@
+(0:00) Bueno, es momento de compilar. Tienes que ver cómo fluyen los datos y tienes que grabar un (0:10) vídeo, el profe quiere un vídeo de cómo está funcionando el MKTT. Tráetelo de entender y (0:19) grábate un vídeo, ya que lo pusiste en un AVM y tú le explicas al profe, en el vídeo, le explicas (0:26) que se utilizó un AVM con Ubuntu y corre, ¿no? No sé si instalaste Docker o, no sé, Dockploy dentro del AVM, ¿no? (0:41) O cómo hiciste, ¿no? Eso es importante.
+Y eso nomás, porque, por ejemplo, el profe, dentro de (0:51) VirtualBox, él instala una dependencia de Docker, pero diferente, no sé el nombre, me olvidé el nombre. (0:57) Pero es como si fuera Docker. O sea, no es Docker Desktop, pero es otro tipo de Docker para Linux.
+(1:04) Entonces, ahí en el vídeo que tú vas a grabar, tienes que decirle al profe que está utilizando todo y los paneles, ¿no? (1:19) Uno con otro. Pero también verificar si falta algo más o quizás algo a mejorar más, ¿no? (1:27) Porque ese que yo subí en el Github, lo veo básico, pero como quería avance ya lo mandé así.
+
+================================================================================
+BITÁCORA Y GUÍA PASO A PASO PARA EL VIDEO EXPLICATIVO (PROFESOR)
+================================================================================
+
+1. INFRAESTRUCTURA Y SERVIDOR REMOTO:
+   - Proveedor de Nube: AWS (Amazon Web Services), Región USA.
+   - Instancia: EC2 t2.micro (Capa Gratuita).
+   - Sistema Operativo: Ubuntu Server (Linux x86_64).
+   - IP Pública / Elástica asignada: 77.112.193.128
+   - Acceso: Llave SSH (iotVM.pem) y usuario ubuntu / root configurados.
+   - Optimización de Recursos:
+     * Almacenamiento: Se amplió el volumen EBS a 30 GB (apto para Free Tier) y se expandió la partición online con growpart y resize2fs (24 GB disponibles).
+     * Memoria: Como la instancia t2.micro cuenta con 1 GB de RAM física, se configuraron 2 GB de memoria SWAP (memoria de intercambio virtual en disco). Esto da 3 GB de memoria total para asegurar estabilidad total sin caídas.
+
+2. MOTOR DE CONTENEDORES (DOCKER PARA LINUX):
+   - Se instaló "Docker Engine (Docker CE Community)" nativo para Linux (no Docker Desktop, ya que en servidores Linux sin entorno gráfico se utiliza Docker Engine por terminal con systemd).
+   - Se configuró el plugin "Docker Compose v2" para orquestar los microservicios de manera profesional.
+
+3. PUERTOS Y REGLAS DE SEGURIDAD (SECURITY GROUP EN AWS):
+   - Puerto 22 (SSH): Administración remota de la VM.
+   - Puerto 1883 (MQTT): Protocolo estándar para telemetría de sensores y secadores.
+   - Puerto 8093 (MQTT WebSockets): Conexión directa desde clientes web/navegador.
+   - Puerto 18083 (EMQX Dashboard): Panel gráfico de monitoreo del Broker MQTT.
+   - Puerto 8080 (phpMyAdmin): Interfaz web para visualizar las bases de datos y tablas de persistencia.
+   - Puerto 8501 (Dashboard Streamlit): Panel web interactivo en tiempo real de los secadores IoT.
+
+4. FLUJO DE DATOS Y COMPONENTES QUE SE MOSTRARÁN EN EL VIDEO:
+   [Sensores / Secadores IoT (Virtualizados)]
+                 | (MQTT - JSON cada 2s)
+                 v
+      [EMQX Broker (Puerto 1883)]
+          /                     \
+         v                       v
+   [Suscriptor Python]     [Dashboard Streamlit (8501)]
+         |                 (Control de consignas y gráficos en vivo)
+         v
+   [Base de Datos MySQL (Puerto 3306)]
+         ^
+         |
+   [phpMyAdmin (Puerto 8080)]
+   (Persistencia y auditoría de lecturas)
+
+5. TRANSFERENCIA Y ESTRUCTURA EN LA VM:
+   - Directorio en el servidor remoto: /home/ubuntu/iot_project
+   - Transferencia segura realizada mediante SCP y tarball comprimido.
+   - Archivos desplegados:
+     * docker-compose.yml: Define los microservicios (emqx, mysql, phpmyadmin, suscriptor, dashboard, simulador).
+     * .env: Parámetros del broker, credenciales de BD y número de secadores.
+     * simulacion_mqtt/: Lógica física del secador, Dockerfiles y schema.sql para la BD.
+
+6. PANELES Y ENLACES ACTIVOS CON DOMINIO Y HTTPS (SSL):
+   - Dominio asignado: https://cafes.duckdns.org
+   - Certificado: Let's Encrypt SSL (Candado verde de seguridad con renovación automática).
+   - Servidor Web Reverse Proxy: Nginx configurado con soporte para WebSockets.
+
+   A) Panel de Control Streamlit (Supervisión y control en tiempo real):
+      URL Principal: https://cafes.duckdns.org/  (o http://77.112.193.128:8501)
+      * Mostrar: Gráficas de temperatura, humedad, consigna ideal (slider) y estado de ventilador/LED.
+
+   B) Gestor de Base de Datos phpMyAdmin:
+      URL: https://cafes.duckdns.org/pma/  (o http://77.112.193.128:8080)
+      Credenciales:
+        * Servidor: mysql (o automático)
+        * Usuario: emqx_user
+        * Contraseña: emqx_pass
+        * Base de datos: emqx_db
+      * Mostrar: Tabla "lecturas" actualizándose cada segundo con los paquetes insertados por el suscriptor.
+
+   C) Panel de Control del Broker MQTT (EMQX Dashboard):
+      URL: http://77.112.193.128:18083  (o https://cafes.duckdns.org/emqx/)
+      Credenciales:
+        * Usuario: admin
+        * Contraseña: public (te pedirá cambiarla o puedes saltarla)
+      * Mostrar: Clientes conectados (secador_01 a secador_05, suscriptor, dashboard) y tasa de mensajes entrantes/salientes.
+
+   D) Endpoint MQTT Seguro (WSS WebSockets):
+      URL: wss://cafes.duckdns.org/mqtt
+
+7. ESTADO ACTUAL DEL SISTEMA:
+   - Certificado SSL Let's Encrypt instalado y activo.
+   - Nginx enrutando el tráfico de forma segura.
+   - Todos los 6 contenedores Docker activos y saludables (Healthy).
+   - Telemetría persistiendo fluidamente en la base de datos sin sobrecargar la memoria.
+
+8. IMPLEMENTACIÓN DEL LABORATORIO 08 DEL PROFESOR:
+   - Base de Datos MySQL: Se creó la BD "laboratorio" con las tablas "mqtt_user" y "mqtt_acl".
+   - Usuario de prueba: "cliente1" con contraseña "1234" configurado según el PDF del docente.
+   - Páginas web desplegadas (disponibles con HTTPS y en el puerto 8080):
+     * Suscripción:
+       - https://cafes.duckdns.org/servidor/suscripcion.php
+       - http://77.112.193.128:8080/servidor/suscripcion.php
+     * Publicación:
+       - https://cafes.duckdns.org/servidor/publicacion.php
+       - http://77.112.193.128:8080/servidor/publicacion.php
+   - Cómo demostrarlo en el video:
+     1. Abres la pestaña de Suscripción (verás el estado en verde "Conectado y Suscrito").
+     2. Abres la pestaña de Publicación al lado y presionas "Enviar Mensaje".
+     3. Muestras cómo el mensaje "MENSAJE!!!...!" aparece al instante en la pantalla y en la consola del navegador (F12) tal como lo pide el docente en el laboratorio.
+
+9. GUION DEFINITIVO PARA LA GRABACIÓN DEL VIDEO (3 a 4 MINUTOS):
+   -----------------------------------------------------------------------------
+   [MINUTO 0:00 - 0:45] INTRODUCCIÓN Y ARQUITECTURA CLOUD
+   - Pantalla: Consola de AWS EC2 o Terminal SSH.
+   - Qué decir:
+     "Buenas tardes profesor. Para esta entrega se implementó una arquitectura IoT
+      desplegada en un servidor remoto en la nube de AWS utilizando una instancia EC2
+      con Ubuntu Linux. Para optimizar los recursos y no saturar el hardware local,
+      se instaló Docker Engine nativo y se configuraron 2 GB de memoria Swap para
+      garantizar alta disponibilidad y estabilidad en los microservicios. Además,
+      se integró Nginx como proxy inverso con certificado SSL (HTTPS) bajo el
+      dominio cafes.duckdns.org."
+
+   -----------------------------------------------------------------------------
+   [MINUTO 0:45 - 1:45] DEMOSTRACIÓN DEL LABORATORIO 08 (PUB/SUB MQTT)
+   - Pantalla: Pestañas divididas: Suscripción a la izquierda, Publicación a la derecha.
+   - Qué decir:
+     "En primer lugar, demostramos el cumplimiento del Laboratorio 08.
+      Aquí tenemos dos clientes web desarrollados bajo WebSockets MQTT:
+      la suscripción y la publicación. Ambos clientes se autentican con el usuario
+      'cliente1' y clave '1234' almacenados en la base de datos 'laboratorio'.
+      Al presionar 'Enviar Mensaje' en el publicador, vemos cómo el paquete viaja
+      hacia el broker EMQX en la nube y llega de manera instantánea al suscriptor
+      en el tópico 'testtopic', tanto en la interfaz gráfica como en la consola F12."
+
+   -----------------------------------------------------------------------------
+   [MINUTO 1:45 - 2:30] BROKER EMQX Y PERSISTENCIA MYSQL
+   - Pantalla: Dashboard de EMQX (:18083) y luego phpMyAdmin (/pma/).
+   - Qué decir:
+     "En el panel de EMQX podemos observar los clientes conectados, los tópicos activos
+      y la tasa de mensajes por segundo. Asimismo, en phpMyAdmin podemos ver la base
+      de datos 'emqx_db' donde nuestro servicio suscriptor en Python captura toda la
+      telemetría de los secadores y la inserta en la tabla 'lecturas' en tiempo real."
+
+   -----------------------------------------------------------------------------
+   [MINUTO 2:30 - 3:30] SUPERVISIÓN DEL SISTEMA DE SECADORES (STREAMLIT)
+   - Pantalla: Panel principal https://cafes.duckdns.org/
+   - Qué decir:
+     "Finalmente, en la capa de aplicación contamos con nuestro dashboard de supervisión
+      y control en Streamlit. Aquí monitoreamos en vivo la temperatura ambiental,
+      temperatura del grano y humedad de los secadores virtuales. Podemos interactuar
+      ajustando la consigna o temperatura ideal, y observar cómo el modelo físico y
+      la lógica de control modulan la activación del ventilador y los actuadores.
+      Con esto demostramos un ecosistema IoT completo, escalable y en producción."

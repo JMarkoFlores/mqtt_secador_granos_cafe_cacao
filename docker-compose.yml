@@ -33,7 +33,7 @@ services:
     container_name: emqx_mysql
     restart: unless-stopped
     ports:
-      - "3306:3306"
+      - "${MYSQL_LOCAL_PORT:-3307}:3306"
     environment:
       MYSQL_DATABASE: ${MYSQL_DB:-emqx_db}
       MYSQL_USER: ${MYSQL_USER:-emqx_user}

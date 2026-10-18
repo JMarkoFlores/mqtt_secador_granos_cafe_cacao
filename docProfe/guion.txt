@@ -1,0 +1,76 @@
+================================================================================
+GUION FÁCIL Y PRÁCTICO PARA EL VIDEO (LABORATORIO 08 + PROYECTO IoT)
+Duración aproximada: 3 a 4 minutos
+================================================================================
+
+--- ANTES DE EMPEZAR A GRABAR ---
+Ten abiertas estas pestañas listas en tu navegador:
+1. Pestaña A: https://cafes.duckdns.org/servidor/suscripcion.php
+2. Pestaña B: https://cafes.duckdns.org/servidor/publicacion.php
+3. Pestaña C: http://77.112.193.128:18083 (EMQX Dashboard)
+4. Pestaña D: https://cafes.duckdns.org/pma/ (phpMyAdmin)
+5. Pestaña E: https://cafes.duckdns.org/ (Panel de Secadores Streamlit)
+
+================================================================================
+PARTE 1: INTRODUCCIÓN Y SERVIDOR EN LA NUBE (0:00 - 0:40)
+================================================================================
+[QUÉ MUESTRAS EN PANTALLA]:
+La consola de AWS EC2 o tu terminal SSH conectada a la máquina virtual.
+
+[LO QUE DICES]:
+"Buenas tardes, profesor. En este video voy a presentar el funcionamiento del sistema IoT bajo MQTT correspondiente al Laboratorio 08 y el avance del proyecto.
+
+Para este desarrollo, en lugar de utilizar una máquina virtual pesada en mi laptop, desplegué un servidor remoto en la nube de AWS utilizando una instancia EC2 con Ubuntu Linux. 
+
+Para que los servicios corran de forma fluida y sin saturar los recursos, instalé Docker Engine nativo y configuré 2 GB de memoria Swap. Además, para que el acceso sea profesional y seguro, configuré un dominio propio con certificado SSL (HTTPS) bajo la dirección cafes.duckdns.org."
+
+================================================================================
+PARTE 2: DEMOSTRACIÓN DEL LABORATORIO 08 (0:40 - 1:40)
+================================================================================
+[QUÉ MUESTRAS EN PANTALLA]:
+Pon la pantalla dividida en dos: a la izquierda la página de Suscripción y a la derecha la de Publicación.
+
+[LO QUE DICES]:
+"Primero, demuestro el cumplimiento del Laboratorio 08 con los dos clientes web: Publicador y Suscriptor.
+
+Ambos se conectan por WebSockets a nuestro broker MQTT utilizando las credenciales que se crearon en la base de datos 'laboratorio': el usuario 'cliente1' con su contraseña '1234'.
+
+Como se observa a la izquierda, el Suscriptor ya está conectado y escuchando el tópico 'testtopic'. Ahora, me voy a la derecha donde está el Publicador y hago clic en 'Enviar Mensaje'.
+
+(Haces clic una o dos veces en el botón)
+
+Inmediatamente podemos ver que el mensaje viaja al servidor y llega en tiempo real al suscriptor, tanto en la interfaz como en la consola del navegador con F12. Con esto queda validada la autenticación y la comunicación bidireccional en tiempo real."
+
+================================================================================
+PARTE 3: EL BROKER EMQX Y LA BASE DE DATOS (1:40 - 2:30)
+================================================================================
+[QUÉ MUESTRAS EN PANTALLA]:
+Pasa a la pestaña de EMQX Dashboard y luego a phpMyAdmin.
+
+[LO QUE DICES]:
+"Ahora pasamos al panel central del broker EMQX. Aquí podemos verificar las conexiones activas: están conectados los secadores virtuales, el suscriptor y los clientes web. También podemos observar las métricas de mensajes entrantes y salientes por segundo.
+
+Seguidamente, en phpMyAdmin vemos la persistencia. En la base de datos 'emqx_db' tenemos la tabla 'lecturas'. Nuestro servicio suscriptor en Python captura la telemetría que publican los secadores y la va guardando automáticamente fila por fila, registrando la temperatura ambiental, la temperatura del grano, la humedad y el estado del ventilador."
+
+================================================================================
+PARTE 4: EL PANEL DE CONTROL DE SECADORES (2:30 - 3:30)
+================================================================================
+[QUÉ MUESTRAS EN PANTALLA]:
+Pasa a la pestaña principal: https://cafes.duckdns.org/ (Streamlit).
+
+[LO QUE DICES]:
+"Por último, muestro la interfaz de supervisión de los secadores de café y cacao desarrollada en Streamlit. 
+
+Como pueden ver, accedemos directamente por dominio con candado de seguridad HTTPS. En esta pantalla se grafican en vivo las variables críticas de cada secador.
+
+Lo interesante es que este sistema es interactivo: si yo modifico aquí la 'Temperatura Ideal' con este slider...
+
+(Mueves el control de temperatura un poco hacia arriba o hacia abajo)
+
+...el panel publica un comando por MQTT hacia el secador virtual, y el modelo físico ajusta automáticamente la potencia del ventilador para alcanzar la temperatura deseada.
+
+Con esto queda demostrado el funcionamiento completo del protocolo MQTT, la virtualización de múltiples nodos y la integración de todo el ecosistema en un servidor en producción. Muchas gracias."
+
+================================================================================
+FIN DEL GUION
+================================================================================
